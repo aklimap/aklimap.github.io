@@ -1,0 +1,47 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Connexion TikTok</title><link rel="stylesheet" href="../style.css"></head><body><main>
+<h1>Connexion TikTok — Hadith Daily</h1>
+<div id="demarrer" class="carte">
+<p>1. Collez la <strong>Client key</strong> de votre application (portail TikTok for Developers → votre app).</p>
+<p><input id="cle" placeholder="Client key" size="30"> <button id="go">Connecter mon compte TikTok</button></p>
+<p class="mute">La Client key n'est pas secrète. Ne collez jamais ici le Client secret.</p>
+</div>
+<div id="retour" class="carte" hidden>
+<p>2. Autorisation reçue. Copiez ce code :</p>
+<p><code id="code"></code></p><p><button id="copier">Copier le code</button> <span id="ok" class="mute"></span></p>
+<p>3. Dans GitHub : <strong>Actions → Connexion TikTok → Run workflow</strong>, collez le code et lancez
+(dans les 5 minutes : le code expire vite).</p>
+</div>
+<div id="erreur" class="carte" hidden></div>
+<script>
+const p = new URLSearchParams(location.search);
+const redirect = location.origin + location.pathname;
+let attendu = null; try { attendu = sessionStorage.getItem("etat_tiktok"); } catch (e) {}
+if (p.get("error")) {
+  const e = document.getElementById("erreur"); e.hidden = false;
+  e.textContent = "TikTok a refusé : " + (p.get("error_description") || p.get("error"));
+} else if (p.get("code")) {
+  document.getElementById("demarrer").hidden = true;
+  document.getElementById("retour").hidden = false;
+  document.getElementById("code").textContent = p.get("code");
+  if (attendu && p.get("state") !== attendu) {
+    const e = document.getElementById("erreur"); e.hidden = false;
+    e.textContent = "Attention : la réponse ne correspond pas à la demande (state). Recommencez depuis cette page.";
+  }
+}
+document.getElementById("go").onclick = () => {
+  const cle = document.getElementById("cle").value.trim();
+  if (!cle) return;
+  const etat = Math.random().toString(36).slice(2) + Date.now().toString(36);
+  try { sessionStorage.setItem("etat_tiktok", etat); } catch (e) {}
+  location.href = "https://www.tiktok.com/v2/auth/authorize/?" + new URLSearchParams({
+    client_key: cle, scope: "user.info.basic,video.upload", response_type: "code",
+    redirect_uri: redirect, state: etat });
+};
+document.getElementById("copier").onclick = async () => {
+  try { await navigator.clipboard.writeText(document.getElementById("code").textContent);
+        document.getElementById("ok").textContent = "copié"; } catch (e) {
+        document.getElementById("ok").textContent = "sélectionnez et copiez le code à la main"; }
+};
+</script>
+</main></body></html>
