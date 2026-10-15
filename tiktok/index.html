@@ -4,6 +4,7 @@
 <div id="demarrer" class="carte">
 <p>1. Collez la <strong>Client key</strong> de votre application (portail TikTok for Developers → votre app).</p>
 <p><input id="cle" placeholder="Client key" size="30"> <button id="go">Connecter mon compte TikTok</button></p>
+<p><label><input type="checkbox" id="direct"> Autoriser aussi la publication directe (<code>video.publish</code>, à cocher seulement si l'app a cette permission)</label></p>
 <p class="mute">La Client key n'est pas secrète. Ne collez jamais ici le Client secret.</p>
 </div>
 <div id="retour" class="carte" hidden>
@@ -35,7 +36,7 @@ document.getElementById("go").onclick = () => {
   const etat = Math.random().toString(36).slice(2) + Date.now().toString(36);
   try { sessionStorage.setItem("etat_tiktok", etat); } catch (e) {}
   location.href = "https://www.tiktok.com/v2/auth/authorize/?" + new URLSearchParams({
-    client_key: cle, scope: "user.info.basic,video.upload", response_type: "code",
+    client_key: cle, scope: "user.info.basic,video.upload" + (document.getElementById("direct").checked ? ",video.publish" : ""), response_type: "code",
     redirect_uri: redirect, state: etat });
 };
 document.getElementById("copier").onclick = async () => {
