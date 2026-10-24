@@ -1,0 +1,62 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Connexion YouTube</title><link rel="stylesheet" href="../style.css"></head><body><main>
+<nav><a href="../">Accueil</a><a href="../confidentialite.html">Confidentialité</a></nav>
+<h1>Connexion YouTube — Hadith Daily</h1>
+<div id="demarrer" class="carte">
+<p>1. Collez l'<strong>ID client</strong> OAuth de votre projet Google (Google Cloud → API et services → Identifiants).
+Il se termine par <code>.apps.googleusercontent.com</code>.</p>
+<p><input id="cle" placeholder="ID client" size="40"></p>
+<p>Chaîne : <label><input type="radio" name="compte" value="ar" checked> arabe</label>
+<label><input type="radio" name="compte" value="en"> anglaise</label></p>
+<p><button id="go">Connecter ma chaîne YouTube</button></p>
+<p class="mute">L'ID client n'est pas secret. Ne collez jamais ici le code secret du client.
+Si Google affiche « Google n'a pas validé cette application », cliquez sur <em>Paramètres avancés</em>,
+puis sur <em>Accéder à Hadith Daily</em> : c'est votre propre application.</p>
+</div>
+<div id="retour" class="carte" hidden>
+<p>2. Autorisation reçue pour la chaîne <strong id="chaine"></strong>. Copiez ce code :</p>
+<p><code id="code"></code></p><p><button id="copier">Copier le code</button> <span id="ok" class="mute"></span></p>
+<p>3. Dans GitHub : <strong>Actions → Connexion YouTube → Run workflow</strong>, choisissez la même chaîne,
+collez le code dans <em>code</em> et lancez (dans les 10 minutes : le code expire vite).</p>
+</div>
+<div id="erreur" class="carte" hidden></div>
+<script>
+const p = new URLSearchParams(location.search);
+const redirect = location.origin + location.pathname;
+const lire = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const ecrire = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+let attendu = null; try { attendu = sessionStorage.getItem("etat_youtube"); } catch (e) {}
+if (lire("client_youtube")) document.getElementById("cle").value = lire("client_youtube");
+if (p.get("error")) {
+  const e = document.getElementById("erreur"); e.hidden = false;
+  e.textContent = "Google a refusé : " + (p.get("error_description") || p.get("error"));
+} else if (p.get("code")) {
+  document.getElementById("demarrer").hidden = true;
+  document.getElementById("retour").hidden = false;
+  document.getElementById("code").textContent = p.get("code");
+  const c = (p.get("state") || "").split(".")[0];
+  document.getElementById("chaine").textContent = c === "en" ? "anglaise (en)" : "arabe (ar)";
+  if (attendu && p.get("state") !== attendu) {
+    const e = document.getElementById("erreur"); e.hidden = false;
+    e.textContent = "Attention : la réponse ne correspond pas à la demande. Recommencez depuis cette page.";
+  }
+}
+document.getElementById("go").onclick = () => {
+  const cle = document.getElementById("cle").value.trim();
+  if (!cle) return;
+  ecrire("client_youtube", cle);
+  const compte = document.querySelector("input[name=compte]:checked").value;
+  const etat = compte + "." + Math.random().toString(36).slice(2) + Date.now().toString(36);
+  try { sessionStorage.setItem("etat_youtube", etat); } catch (e) {}
+  location.href = "https://accounts.google.com/o/oauth2/v2/auth?" + new URLSearchParams({
+    client_id: cle, redirect_uri: redirect, response_type: "code", access_type: "offline",
+    prompt: "consent select_account", state: etat,
+    scope: "https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly" });
+};
+document.getElementById("copier").onclick = async () => {
+  try { await navigator.clipboard.writeText(document.getElementById("code").textContent);
+        document.getElementById("ok").textContent = "copié"; } catch (e) {
+        document.getElementById("ok").textContent = "sélectionnez et copiez le code à la main"; }
+};
+</script>
+</main></body></html>
